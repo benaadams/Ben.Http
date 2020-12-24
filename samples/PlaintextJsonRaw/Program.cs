@@ -39,8 +39,9 @@ public class Application : HttpApplication
 
     // Request loop; note this is called in parallel so should be stateless.
     // State holding for the request should be setup in the HttpContext
-    public override Task ProcessRequestAsync(HttpContext context)
+    public override Task ProcessRequestAsync(Context context)
     {
+        // Do routing in this override method
         var path = context.Request.Path;
         if (path == "/plaintext")
         {
@@ -54,7 +55,7 @@ public class Application : HttpApplication
         return NotFound(context);
     }
 
-    public Task NotFound(HttpContext context)
+    public Task NotFound(Context context)
     {
         // Path didn't match anything
         context.Response.StatusCode = 404;
@@ -63,7 +64,7 @@ public class Application : HttpApplication
     }
 
     private static readonly byte[] _helloWorldBytes = Encoding.UTF8.GetBytes("Hello, World!");
-    public async Task Plaintext(HttpContext context)
+    public async Task Plaintext(Context context)
     {
         var payload = _helloWorldBytes;
 
@@ -72,10 +73,10 @@ public class Application : HttpApplication
         headers.ContentLength = payload.Length;
         headers[HeaderNames.ContentType] = "text/plain";
 
-        await context.ResponseBody.Writer.WriteAsync(payload);
+        await context.Response.Writer.WriteAsync(payload);
     }
 
-    public Task Json(HttpContext context)
+    public Task Json(Context context)
     {
         var headers = context.Response.Headers;
 
@@ -100,10 +101,10 @@ public class Application : HttpApplication
     private static readonly JsonSerializerOptions SerializerOptions = new JsonSerializerOptions(new JsonSerializerOptions { });
     private readonly static uint _jsonPayloadSize = (uint)JsonSerializer.SerializeToUtf8Bytes(new JsonMessage { message = "Hello, World!" }, SerializerOptions).Length;
 
-    private Utf8JsonWriter GetJsonWriter(HttpContext context)
+    private Utf8JsonWriter GetJsonWriter(Context context)
     {
-        Utf8JsonWriter utf8JsonWriter = t_writer ??= new Utf8JsonWriter(context.ResponseBody.Writer, new JsonWriterOptions { SkipValidation = true });
-        utf8JsonWriter.Reset(context.ResponseBody.Writer);
+        Utf8JsonWriter utf8JsonWriter = t_writer ??= new Utf8JsonWriter(context.Response.Writer, new JsonWriterOptions { SkipValidation = true });
+        utf8JsonWriter.Reset(context.Response.Writer);
         return utf8JsonWriter;
     }
 }

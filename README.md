@@ -27,6 +27,10 @@ Of note a there is a `samples/PlaintextJsonRaw` project that then uses this serv
 
 `dotnet run -c Release` 
 
+Of note a there is a `samples/PlaintextJsonViaExtensions` project that then uses this server plus some extension methods to create an application that implements the Techempower plaintext and json tests in a simpler manner than the Raw. This is a single file server that you can run from that directory with:
+
+`dotnet run -c Release` 
+
 And it will set up a server listening on port `8080` and responding to the paths `/plaintext` and `/json`
 
 ![image](https://user-images.githubusercontent.com/1142958/103061598-beeb2780-45a3-11eb-9e56-d886530b2e2e.png)
