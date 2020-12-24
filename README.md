@@ -23,7 +23,7 @@ Mostly its an example to derive from.
 
 `dotnet build -c Release` will build the project.
 
-Of note a there is a `samples/PlaintextJson` project that then uses this server to create an application that implements the Techempower plaintext and json tests. This is a single file server that you can run from that directory with:
+Of note a there is a `samples/PlaintextJsonRaw` project that then uses this server to create an application that implements the Techempower plaintext and json tests. This is a single file server that you can run from that directory with:
 
 `dotnet run -c Release` 
 
