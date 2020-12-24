@@ -1,30 +1,40 @@
 using System;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 using Microsoft.Net.Http.Headers;
 
 using Ben.Http;
-using System.Text.Json;
 
 public class Application : HttpApplication
 {
-    public async static Task Main()
+    public async static Task Main(string[] args)
     {
-        using (var server = new HttpServer("http://+:8080"))
+        var port = 8080;
+        if (args.Length > 0)
+        {
+            // Set the port if specified in args
+            port = int.Parse(args[0]);
+        }
+
+        using (var server = new HttpServer($"http://+:{port}"))
         {
             await server.StartAsync(new Application(), cancellationToken: default);
 
-            Console.WriteLine("Ben.Http Stand alone test application.");
+            // Output some verbage
+            Console.WriteLine("Ben.Http standalone test application");
+            Console.WriteLine();
+            Console.WriteLine($"Paths /plaintext and /json; listening on port {port}");
+            Console.WriteLine();
             Console.WriteLine("Press enter to exit the application");
 
+            // Wait for keypress to exit
             Console.ReadLine();
 
             await server.StopAsync(cancellationToken: default);
         }
     }
-
-    private static readonly byte[] _helloWorldBytes = Encoding.UTF8.GetBytes("Hello, World!");
 
     public override Task ProcessRequestAsync(HttpContext context)
     {
@@ -43,11 +53,13 @@ public class Application : HttpApplication
 
     public Task NotFound(HttpContext context)
     {
+        // Path didn't match anything
         context.Response.StatusCode = 404;
 
         return Task.CompletedTask;
     }
 
+    private static readonly byte[] _helloWorldBytes = Encoding.UTF8.GetBytes("Hello, World!");
     public async Task Plaintext(HttpContext context)
     {
         var payload = _helloWorldBytes;
