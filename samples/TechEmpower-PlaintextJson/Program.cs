@@ -10,7 +10,7 @@ public class Application : HttpApplication
 {
     public async static Task Main()
     {
-        using (var server = new HttpServer(new Uri("http://localhost:8080")))
+        using (var server = new HttpServer("http://+:8080"))
         {
             await server.StartAsync(new Application(), cancellationToken: default);
 
