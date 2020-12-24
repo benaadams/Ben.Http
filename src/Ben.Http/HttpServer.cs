@@ -21,25 +21,30 @@ namespace Ben.Http
 
         public IFeatureCollection Features => _server.Features;
 
-        public HttpServer(Uri listenAddress) : this()
+        public HttpServer(string listenAddress) : this(DefaultLoggerFactories.Empty)
         {
             var addresses = Features.Get<IServerAddressesFeature>();
-            addresses.Addresses.Add(listenAddress.ToString());
+            addresses.Addresses.Add(listenAddress);
         }
 
-        public HttpServer(IEnumerable<Uri> listenAddresses) : this()
+        public HttpServer(string listenAddress, ILoggerFactory loggerFactory) : this(loggerFactory)
+        {
+            var addresses = Features.Get<IServerAddressesFeature>();
+            addresses.Addresses.Add(listenAddress);
+        }
+
+        public HttpServer(IEnumerable<string> listenAddresses, ILoggerFactory loggerFactory) : this(loggerFactory)
         {
             var addresses = Features.Get<IServerAddressesFeature>();
             foreach (var uri in listenAddresses)
             {
-                addresses.Addresses.Add(uri.ToString());
+                addresses.Addresses.Add(uri);
             };
         }
 
-        private HttpServer()
+        private HttpServer(ILoggerFactory loggerFactory)
         {
-            _loggerFactory = new LoggerFactory();
-            _loggerFactory.AddProvider(new ConsoleLoggerProvider(LoggerOptions.Default));
+            _loggerFactory = loggerFactory;
             _server = new KestrelServer(
                 KestrelOptions.Defaults,
                 new SocketTransportFactory(SocketOptions.Defaults, _loggerFactory),
@@ -52,6 +57,11 @@ namespace Ben.Http
         public Task StopAsync(CancellationToken cancellationToken) => _server.StopAsync(cancellationToken);
 
         public void Dispose() => _server.Dispose();
+
+        private class DefaultLoggerFactories
+        {
+            public static ILoggerFactory Empty => new LoggerFactory();
+        }
 
         private class KestrelOptions : IOptions<KestrelServerOptions>
         {
