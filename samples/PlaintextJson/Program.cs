@@ -36,6 +36,8 @@ public class Application : HttpApplication
         }
     }
 
+    // Request loop; note this is called in parallel so should be stateless.
+    // State holding for the request should be setup in the HttpContext
     public override Task ProcessRequestAsync(HttpContext context)
     {
         var path = context.Request.Path;

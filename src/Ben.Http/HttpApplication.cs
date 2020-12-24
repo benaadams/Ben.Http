@@ -11,7 +11,7 @@ namespace Ben.Http
     {
         public abstract Task ProcessRequestAsync(HttpContext context);
 
-        public HttpContext CreateContext(IFeatureCollection features)
+        HttpContext IHttpApplication<HttpContext>.CreateContext(IFeatureCollection features)
         {
             HttpContext hostContext;
             if (features is IHostContextContainer<HttpContext> container)
@@ -36,7 +36,7 @@ namespace Ben.Http
             return hostContext;
         }
 
-        public void DisposeContext(HttpContext context, Exception exception)
+        void IHttpApplication<HttpContext>.DisposeContext(HttpContext context, Exception exception)
         {
             context.Reset();
         }
