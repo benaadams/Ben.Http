@@ -1,6 +1,7 @@
 using System;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.Net.Http.Headers;
@@ -9,6 +10,8 @@ using Ben.Http;
 
 public class Application : HttpApplication
 {
+    private readonly static SemaphoreSlim _cancel = new (initialCount: 0);
+
     public async static Task Main(string[] args)
     {
         var port = 8080;
@@ -18,19 +21,17 @@ public class Application : HttpApplication
             port = int.Parse(args[0]);
         }
 
+        // Set Ctrl-C to start the shutdown
+        Console.CancelKeyPress += (_,_) => _cancel.Release();
+
         using (var server = new HttpServer($"http://+:{port}"))
         {
             await server.StartAsync(new Application(), cancellationToken: default);
 
             // Output some verbage
-            Console.WriteLine("Ben.Http standalone test application");
-            Console.WriteLine();
             Console.WriteLine($"Paths /plaintext and /json; listening on port {port}");
-            Console.WriteLine();
-            Console.WriteLine("Press enter to exit the application");
 
-            // Wait for keypress to exit
-            Console.ReadLine();
+            await _cancel.WaitAsync();
 
             await server.StopAsync(cancellationToken: default);
         }
