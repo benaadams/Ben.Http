@@ -1,6 +1,5 @@
 using System;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Hosting.Server;
@@ -12,13 +11,19 @@ using Ben.Http;
 
 public class Program
 {
-    private static SemaphoreSlim _semaphore = new SemaphoreSlim(0);
-
     public async static Task Main()
     {
-        var server = new HttpServer();
-        await server.StartAsync(new Application(), default);
-        await _semaphore.WaitAsync();
+        using (var server = new HttpServer(new Uri("http://localhost:8080")))
+        {
+            await server.StartAsync(new Application(), cancellationToken: default);
+
+            Console.WriteLine("Ben.Http Stand alone test application.");
+            Console.WriteLine("Press enter to exit the application");
+
+            Console.ReadLine();
+
+            await server.StopAsync(cancellationToken: default);
+        } 
     }
 }
 
