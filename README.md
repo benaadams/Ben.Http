@@ -1,18 +1,32 @@
-# New Repo Project
+# Ben.Http
 
-The new-repo project is a default template for .NET Foundation projects. It's also probably a fine start for other .NET projects (have at it, but change the license). It contains the correct license, a decent README, and initial project structure (including a standard .gitignore for the Visual Studio family of products).
+Low level ASP.NET Core example web server
 
-You can learn more about the project from the project [Documentation](Documentation).
+An example of using the ASP.NET Core servers for a .NET web application without any of the rest of the framework (e.g. Hosting, DI, middleware etc). So you can create your own distinct opinionated framework.
 
-## Using New Repo
+## Using Ben.Http
 
-You can simply `git clone` this project to get started. It is recommended that you don't preserve history of the project (it isn't generally meaningful) for your repo, but make a copy and `git init` your project from source.
+Mostly its an example to derive from. 
 
-Consult [CHECKLIST.md] for helpful suggestions on preparing your repo to go public.
+`src\Ben.Http` contains and sets up the server; it is [Kestrel](https://github.com/dotnet/aspnetcore/tree/master/src/Servers/Kestrel) by default, but any server deriving from 'IServer' will also work (e.g. `HttpSys`, `IIS`, etc)
+
+`HttpServer.cs` contains the server that is newed up; currently set to various defaults/
+
+`HttpContext.cs` contains the Request/Response context, but this can be changed to be whatever set of properties you want to expose; in whatever way you want to expose them. Generally you get the information from the server by asking the `IFeatureCollection` for them and they are in the namespace `Microsoft.AspNetCore.Http.Features`
+
+`HttpApplication.cs` is the application that deals with processing the requests. This creates and disposes of the `HttpContext` setting its features; and in this example `Task ProcessRequestAsync(HttpContext context)` is `abstract` so an application can derive from this class and implement that one method; and the bolierplate of setting up the Request/Response context is handled for them.
 
 ## Building
 
-You don't "build" New Repo, however, this will be meaningful for many other projects.
+`dotnet build -c Release` will build the project.
+
+Of note a there is a `samples/PlaintextJson` project that then uses this server to create an application that implements the Techempower plaintext and json tests. This is a single file server that you can run from that directory with:
+
+`dotnet run -c Release` 
+
+And it will set up a server listening on port `8080` and responding to the paths `/plaintext` and `/json`
+
+Have fun!
 
 ## Contributing
 
