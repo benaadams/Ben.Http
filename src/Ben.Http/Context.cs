@@ -13,6 +13,7 @@ namespace Ben.Http
 
         internal void Initialize(IFeatureCollection features)
         {
+            Request.Initialize(features);
             Response.Initialize(features);
         }
 
