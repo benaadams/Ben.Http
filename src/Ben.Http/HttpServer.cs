@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,18 +21,29 @@ namespace Ben.Http
 
         public IFeatureCollection Features => _server.Features;
 
-        public HttpServer()
+        public HttpServer(Uri listenAddress) : this()
+        {
+            var addresses = Features.Get<IServerAddressesFeature>();
+            addresses.Addresses.Add(listenAddress.ToString());
+        }
+
+        public HttpServer(IEnumerable<Uri> listenAddresses) : this()
+        {
+            var addresses = Features.Get<IServerAddressesFeature>();
+            foreach (var uri in listenAddresses)
+            {
+                addresses.Addresses.Add(uri.ToString());
+            };
+        }
+
+        private HttpServer()
         {
             _loggerFactory = new LoggerFactory();
             _loggerFactory.AddProvider(new ConsoleLoggerProvider(LoggerOptions.Default));
             _server = new KestrelServer(
-                KestrelOptions.Defaults, 
-                new SocketTransportFactory(SocketOptions.Defaults, _loggerFactory), 
+                KestrelOptions.Defaults,
+                new SocketTransportFactory(SocketOptions.Defaults, _loggerFactory),
                 _loggerFactory);
-
-
-            var addresses = Features.Get<IServerAddressesFeature>();
-            addresses.Addresses.Add("http://+");
         }
 
         public Task StartAsync<TContext>(IHttpApplication<TContext> application, CancellationToken cancellationToken) where TContext : notnull
