@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30803.129
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ben.Http", "src\Ben.Http\Ben.Http.csproj", "{2B45DAC1-5348-4C26-80B9-DDF0CE69F594}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{8E57D308-1B05-46EA-8E8B-C365DD6574FF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TechEmpower-PlaintextJson", "samples\TechEmpower-PlaintextJson\TechEmpower-PlaintextJson.csproj", "{818F70CB-9F01-4ECA-A9C9-C447F4161528}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2B45DAC1-5348-4C26-80B9-DDF0CE69F594}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2B45DAC1-5348-4C26-80B9-DDF0CE69F594}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2B45DAC1-5348-4C26-80B9-DDF0CE69F594}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2B45DAC1-5348-4C26-80B9-DDF0CE69F594}.Release|Any CPU.Build.0 = Release|Any CPU
+		{818F70CB-9F01-4ECA-A9C9-C447F4161528}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{818F70CB-9F01-4ECA-A9C9-C447F4161528}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{818F70CB-9F01-4ECA-A9C9-C447F4161528}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{818F70CB-9F01-4ECA-A9C9-C447F4161528}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{818F70CB-9F01-4ECA-A9C9-C447F4161528} = {8E57D308-1B05-46EA-8E8B-C365DD6574FF}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {AFA681B7-6567-4E2D-812B-F3B58D8899AE}
+	EndGlobalSection
+EndGlobal
