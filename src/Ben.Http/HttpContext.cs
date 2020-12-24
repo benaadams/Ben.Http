@@ -4,15 +4,26 @@ namespace Ben.Http
 {
     public class HttpContext
     {
-        public IHttpRequestFeature Request { get; internal set; }
-        public IHttpResponseFeature Response { get; internal set; }
-        public IHttpResponseBodyFeature ResponseBody { get; internal set; }
+        private IFeatureCollection _features = null!;
+
+        private IHttpRequestFeature? _request;
+        private IHttpResponseFeature? _response;
+        private IHttpResponseBodyFeature? _responseBody;
+
+        internal void Initialize(IFeatureCollection features)
+        {
+            _features = features;
+        }
+
+        public IHttpRequestFeature Request => _request ??= _features.Get<IHttpRequestFeature>();
+        public IHttpResponseFeature Response => _response ??= _features.Get<IHttpResponseFeature>();
+        public IHttpResponseBodyFeature ResponseBody => _responseBody ??= _features.Get<IHttpResponseBodyFeature>();
 
         public void Reset()
         {
-            Request = null;
-            Response = null;
-            ResponseBody = null;
+            _request = null;
+            _response = null;
+            _responseBody = null;
         }
     }
 }

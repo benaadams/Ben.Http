@@ -13,31 +13,32 @@ namespace Ben.Http
 
         HttpContext IHttpApplication<HttpContext>.CreateContext(IFeatureCollection features)
         {
-            HttpContext hostContext;
+            HttpContext context;
             if (features is IHostContextContainer<HttpContext> container)
             {
-                hostContext = container.HostContext;
-                if (hostContext is null)
+                // The server allows us to store the HttpContext on the connection
+                // between requests so we don't have to reallocate it each time.
+                context = container.HostContext;
+                if (context is null)
                 {
-                    hostContext = new HttpContext();
-                    container.HostContext = hostContext;
+                    context = new HttpContext();
+                    container.HostContext = context;
                 }
             }
             else
             {
                 // Server doesn't support pooling, so create a new Context
-                hostContext = new HttpContext();
+                context = new HttpContext();
             }
 
-            hostContext.Request = features.Get<IHttpRequestFeature>();
-            hostContext.Response = features.Get<IHttpResponseFeature>();
-            hostContext.ResponseBody = features.Get<IHttpResponseBodyFeature>();
+            context.Initialize(features);
 
-            return hostContext;
+            return context;
         }
 
         void IHttpApplication<HttpContext>.DisposeContext(HttpContext context, Exception exception)
         {
+            // As we may be pooling the HttpContext above; Reset its settings.
             context.Reset();
         }
     }
