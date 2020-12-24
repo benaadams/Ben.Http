@@ -26,6 +26,8 @@ Of note a there is a `samples/PlaintextJson` project that then uses this server 
 
 And it will set up a server listening on port `8080` and responding to the paths `/plaintext` and `/json`
 
+![image](https://user-images.githubusercontent.com/1142958/103061598-beeb2780-45a3-11eb-9e56-d886530b2e2e.png)
+
 Have fun!
 
 ## Contributing
