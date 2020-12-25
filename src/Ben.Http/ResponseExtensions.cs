@@ -6,7 +6,7 @@ using Microsoft.Net.Http.Headers;
 
 namespace Ben.Http
 {
-    public static class HttpResponseExtensions
+    public static class ResponseExtensions
     {
         public static Task Text(this Response response, ReadOnlySpan<byte> utf8String)
         {
