@@ -9,7 +9,8 @@ var port = 8080;
 var server = new HttpServer($"http://+:{port}");
 var app = new HttpApplication();
 
-app.Get("/plaintext", (req, res) => res.TextResult(Settings.HelloWorld()));
+app.Get("/plaintext", (req, res)
+    => res.TextResult(Settings.HelloWorld()));
 
 app.Get("/json", (req, res) => {
     res.Headers.ContentLength = 27;
