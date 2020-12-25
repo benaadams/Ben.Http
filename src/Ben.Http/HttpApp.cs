@@ -11,7 +11,7 @@ namespace Ben.Http
 {
     public delegate Task RequestHandler(Request req, Response res);
 
-    public class HttpApplication : IHttpApplication<Context>
+    public class HttpApp : IHttpApplication<Context>
     {
         private readonly Dictionary<string, RequestHandler> _routes = new();
 
