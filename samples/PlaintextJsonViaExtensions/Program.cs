@@ -6,8 +6,7 @@ using Ben.Http;
 
 var port = 8080;
 
-var server = new HttpServer($"http://+:{port}");
-var app = new HttpApplication();
+var (server, app) = (new HttpServer($"http://+:{port}"), new HttpApplication());
 
 // Assign routes
 app.Get("/plaintext", (req, res)
