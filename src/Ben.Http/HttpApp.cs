@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Abstractions;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.Net.Http.Headers;
 
 namespace Ben.Http
 {
@@ -18,6 +19,27 @@ namespace Ben.Http
         public void Get(string path, RequestHandler handler)
         {
             _routes[path] = handler;
+        }
+
+        public void Get(string path, Func<string> handler)
+        {
+            var utf8String = Encoding.UTF8.GetBytes(handler());
+
+            _routes[path] = (req, res) =>
+            {
+                var headers = res.Headers;
+
+                headers.ContentLength = utf8String.Length;
+                headers[HeaderNames.ContentType] = "text/plain";
+
+                var writer = res.Writer;
+                var output = writer.GetSpan(utf8String.Length);
+
+                utf8String.CopyTo(output);
+                writer.Advance(utf8String.Length);
+
+                return Task.CompletedTask;
+            };
         }
 
         public override string ToString()

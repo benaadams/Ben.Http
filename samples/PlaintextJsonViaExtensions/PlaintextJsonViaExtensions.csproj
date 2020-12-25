@@ -9,7 +9,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Ben.Http\Ben.Http.csproj" />
-    <PackageReference Include="StringLiteralGenerator" Version="1.0.0" />
   </ItemGroup>
 
 </Project>
