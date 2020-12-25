@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Hosting.Server;
@@ -17,6 +18,18 @@ namespace Ben.Http
         public void Get(string path, RequestHandler handler)
         {
             _routes[path] = handler;
+        }
+
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine($"Paths:");
+            foreach (var path in _routes.Keys)
+            {
+                sb.AppendLine($"=> {path}");
+            }
+
+            return sb.ToString();
         }
 
         public IEnumerable<string> Paths

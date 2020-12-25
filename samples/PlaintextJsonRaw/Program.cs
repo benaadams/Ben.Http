@@ -12,13 +12,15 @@ var port = 8080;
 var server = new HttpServer($"http://+:{port}");
 var app = new HttpApplication();
 
+// Assign routes
 app.Get("/plaintext", Plaintext);
 app.Get("/json", Json);
 
-WriteLine($"Listening on port {port}, paths:\n=> {string.Join("\n=> ", app.Paths)}");
+Write($"{server} {app}"); // Output info
 
 await server.RunAsync(app);
 
+// Route methods
 async Task Plaintext(Request request, Response response)
 {
     var payload = Settings.HelloWorld;
@@ -44,6 +46,7 @@ static Task Json(Request request, Response response)
         Settings.SerializerOptions);
 }
 
+// Settings and datastructures
 struct JsonMessage { public string message { get; set; } }
 
 static class Settings

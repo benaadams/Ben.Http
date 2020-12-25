@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -15,9 +15,9 @@ using Microsoft.Extensions.Options;
 
 namespace Ben.Http
 {
-    public class HttpServer : IServer
+    public class HttpServer : IDisposable
     {
-        private Task? _startTask;
+        private IServerAddressesFeature _addresses = null!;
         private TaskCompletionSource _completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         private ILoggerFactory _loggerFactory;
         private IServer _server;
@@ -26,22 +26,22 @@ namespace Ben.Http
 
         public HttpServer(string listenAddress) : this(DefaultLoggerFactories.Empty)
         {
-            var addresses = Features.Get<IServerAddressesFeature>();
-            addresses.Addresses.Add(listenAddress);
+            _addresses = Features.Get<IServerAddressesFeature>();
+            _addresses.Addresses.Add(listenAddress);
         }
 
         public HttpServer(string listenAddress, ILoggerFactory loggerFactory) : this(loggerFactory)
         {
-            var addresses = Features.Get<IServerAddressesFeature>();
-            addresses.Addresses.Add(listenAddress);
+            _addresses = Features.Get<IServerAddressesFeature>();
+            _addresses.Addresses.Add(listenAddress);
         }
 
         public HttpServer(IEnumerable<string> listenAddresses, ILoggerFactory loggerFactory) : this(loggerFactory)
         {
-            var addresses = Features.Get<IServerAddressesFeature>();
+            _addresses = Features.Get<IServerAddressesFeature>();
             foreach (var uri in listenAddresses)
             {
-                addresses.Addresses.Add(uri);
+                _addresses.Addresses.Add(uri);
             };
         }
 
@@ -54,12 +54,21 @@ namespace Ben.Http
                 _loggerFactory);
         }
 
-        public Task StartAsync<TContext>(IHttpApplication<TContext> application, CancellationToken cancellationToken = default) where TContext : notnull
-            => _startTask ??= _server.StartAsync(application, cancellationToken);
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine($"Listening on:");
+            foreach (var address in _addresses.Addresses)
+            {
+                sb.AppendLine($"=> {address}");
+            }
+
+            return sb.ToString();
+        }
 
         public async Task RunAsync(HttpApplication application, CancellationToken cancellationToken = default)
         {
-            await StartAsync(application, cancellationToken);
+            await _server.StartAsync(application, cancellationToken);
 
             cancellationToken.UnsafeRegister(static (o) => ((HttpServer)o!)._completion.TrySetResult(), this);
             
@@ -68,9 +77,7 @@ namespace Ben.Http
             await _server.StopAsync(default);
         }
 
-        public Task StopAsync(CancellationToken cancellationToken = default) => _server.StopAsync(cancellationToken);
-
-        public void Dispose() => _server.Dispose();
+        void IDisposable.Dispose() => _server.Dispose();
 
         private class DefaultLoggerFactories
         {
@@ -79,7 +86,12 @@ namespace Ben.Http
 
         private class KestrelOptions : IOptions<KestrelServerOptions>
         {
-            public static KestrelOptions Defaults { get; } = new KestrelOptions { Value = new KestrelServerOptions() };
+            private KestrelOptions()
+            {
+                Value = new KestrelServerOptions();
+            }
+
+            public static KestrelOptions Defaults { get; } = new KestrelOptions();
 
             public KestrelServerOptions Value { get; init; }
         }
