@@ -28,15 +28,16 @@ namespace Ben.Http
             _routes[path] = (req, res) =>
             {
                 var headers = res.Headers;
+                ReadOnlySpan<byte> data = utf8String;
 
-                headers.ContentLength = utf8String.Length;
+                headers.ContentLength = data.Length;
                 headers[HeaderNames.ContentType] = "text/plain";
 
                 var writer = res.Writer;
-                var output = writer.GetSpan(utf8String.Length);
+                var output = writer.GetSpan(data.Length);
 
-                utf8String.CopyTo(output);
-                writer.Advance(utf8String.Length);
+                data.CopyTo(output);
+                writer.Advance(data.Length);
 
                 return Task.CompletedTask;
             };
