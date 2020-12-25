@@ -33,6 +33,13 @@ namespace Ben.Http
             return Task.CompletedTask;
         }
 
+        public static Task NotFound(this Response response)
+        {
+            response.StatusCode = 404;
+
+            return Task.CompletedTask;
+        }
+
         [ThreadStatic]
         private static Utf8JsonWriter t_writer = null!;
         private static readonly JsonSerializerOptions SerializerOptions = new JsonSerializerOptions(new JsonSerializerOptions { });
