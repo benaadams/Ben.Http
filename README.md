@@ -29,7 +29,7 @@ Of note a there is a `samples/PlaintextJsonRaw` project that then uses this serv
 
 Of note a there is a `samples/PlaintextJsonViaExtensions` project that then uses this server plus some extension methods to create an application that implements the Techempower plaintext and json tests in a simpler manner than the Raw. This is again a single file server:
 
-![image](https://user-images.githubusercontent.com/1142958/103118050-22895980-4665-11eb-825e-844249d511a3.png)
+![image](https://user-images.githubusercontent.com/1142958/103118188-a2afbf00-4665-11eb-8814-57566fbd1e65.png)
 
 You can run from that directory with:
 
