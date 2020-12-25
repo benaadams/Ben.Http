@@ -9,6 +9,7 @@ var port = 8080;
 var server = new HttpServer($"http://+:{port}");
 var app = new HttpApplication();
 
+// Assign routes
 app.Get("/plaintext", (req, res)
     => res.TextResult(Settings.HelloWorld()));
 
@@ -17,10 +18,13 @@ app.Get("/json", (req, res) => {
     return res.JsonResult(new JsonMessage { message = "Hello, World!" });
 });
 
-WriteLine($"Listening on port {port}, paths:\n=> {string.Join("\n=> ", app.Paths)}");
+// Output info
+Write($"{server} {app}");
 
+// Start the server
 await server.RunAsync(app);
 
+// Settings and datastructures
 static partial class Settings
 {
     [Utf8("Hello, World!")]
