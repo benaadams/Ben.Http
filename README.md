@@ -27,7 +27,11 @@ Of note a there is a `samples/PlaintextJsonRaw` project that then uses this serv
 
 `dotnet run -c Release` 
 
-Of note a there is a `samples/PlaintextJsonViaExtensions` project that then uses this server plus some extension methods to create an application that implements the Techempower plaintext and json tests in a simpler manner than the Raw. This is a single file server that you can run from that directory with:
+Of note a there is a `samples/PlaintextJsonViaExtensions` project that then uses this server plus some extension methods to create an application that implements the Techempower plaintext and json tests in a simpler manner than the Raw. This is again a single file server:
+
+![image](https://user-images.githubusercontent.com/1142958/103118050-22895980-4665-11eb-825e-844249d511a3.png)
+
+You can run from that directory with:
 
 `dotnet run -c Release` 
 
