@@ -1,110 +1,53 @@
 using System;
 using System.Text;
 using System.Text.Json;
-using System.Threading;
 using System.Threading.Tasks;
-
 using Microsoft.Net.Http.Headers;
+using static System.Console;
 
 using Ben.Http;
 
-public class Application : HttpApplication
+var port = 8080;
+
+var server = new HttpServer($"http://+:{port}");
+var app = new HttpApplication();
+
+app.Get("/plaintext", Plaintext);
+app.Get("/json", Json);
+
+WriteLine($"Listening on port {port}, paths:\n=> {string.Join("\n=> ", app.Paths)}");
+
+await server.RunAsync(app);
+
+async Task Plaintext(Request request, Response response)
 {
-    private readonly static SemaphoreSlim _cancel = new (initialCount: 0);
+    var payload = Settings.HelloWorld;
 
-    public async static Task Main(string[] args)
-    {
-        var port = 8080;
-        if (args.Length > 0)
-        {
-            // Set the port if specified in args
-            port = int.Parse(args[0]);
-        }
+    var headers = response.Headers;
 
-        // Set Ctrl-C to start the shutdown
-        Console.CancelKeyPress += (_,_) => _cancel.Release();
+    headers.ContentLength = payload.Length;
+    headers[HeaderNames.ContentType] = "text/plain";
 
-        using (var server = new HttpServer($"http://+:{port}"))
-        {
-            await server.StartAsync(new Application(), cancellationToken: default);
+    await response.Writer.WriteAsync(payload);
+}
 
-            // Output some verbage
-            Console.WriteLine($"Paths /plaintext and /json; listening on port {port}");
+static Task Json(Request request, Response response)
+{
+    var headers = response.Headers;
 
-            await _cancel.WaitAsync();
+    headers.ContentLength = 27;
+    headers[HeaderNames.ContentType] = "application/json";
 
-            await server.StopAsync(cancellationToken: default);
-        }
-    }
+    return JsonSerializer.SerializeAsync(
+        response.Stream, 
+        new JsonMessage { message = "Hello, World!" }, 
+        Settings.SerializerOptions);
+}
 
-    // Request loop; note this is called in parallel so should be stateless.
-    // State holding for the request should be setup in the HttpContext
-    public override Task ProcessRequestAsync(Context context)
-    {
-        // Do routing in this override method
-        var path = context.Request.Path;
-        if (path == "/plaintext")
-        {
-            return Plaintext(context);
-        }
-        else if (path == "/json")
-        {
-            return Json(context);
-        }
+struct JsonMessage { public string message { get; set; } }
 
-        return NotFound(context);
-    }
-
-    public Task NotFound(Context context)
-    {
-        // Path didn't match anything
-        context.Response.StatusCode = 404;
-
-        return Task.CompletedTask;
-    }
-
-    private static readonly byte[] _helloWorldBytes = Encoding.UTF8.GetBytes("Hello, World!");
-    public async Task Plaintext(Context context)
-    {
-        var payload = _helloWorldBytes;
-
-        var headers = context.Response.Headers;
-
-        headers.ContentLength = payload.Length;
-        headers[HeaderNames.ContentType] = "text/plain";
-
-        await context.Response.Writer.WriteAsync(payload);
-    }
-
-    public Task Json(Context context)
-    {
-        var headers = context.Response.Headers;
-
-        headers.ContentLength = _jsonPayloadSize;
-        headers[HeaderNames.ContentType] = "application/json";
-
-        JsonSerializer.Serialize(
-            GetJsonWriter(context), 
-            new JsonMessage { message = "Hello, World!" }, 
-            SerializerOptions);
-
-        return Task.CompletedTask;
-    }
-
-    public struct JsonMessage
-    {
-        public string message { get; set; }
-    }
-
-    [ThreadStatic]
-    private static Utf8JsonWriter t_writer;
-    private static readonly JsonSerializerOptions SerializerOptions = new JsonSerializerOptions(new JsonSerializerOptions { });
-    private readonly static uint _jsonPayloadSize = (uint)JsonSerializer.SerializeToUtf8Bytes(new JsonMessage { message = "Hello, World!" }, SerializerOptions).Length;
-
-    private Utf8JsonWriter GetJsonWriter(Context context)
-    {
-        Utf8JsonWriter utf8JsonWriter = t_writer ??= new Utf8JsonWriter(context.Response.Writer, new JsonWriterOptions { SkipValidation = true });
-        utf8JsonWriter.Reset(context.Response.Writer);
-        return utf8JsonWriter;
-    }
+static class Settings
+{
+    public static readonly byte[] HelloWorld = Encoding.UTF8.GetBytes("Hello, World!");
+    public static readonly JsonSerializerOptions SerializerOptions = new JsonSerializerOptions(new JsonSerializerOptions { });
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Hosting.Server;
@@ -7,9 +8,40 @@ using Microsoft.AspNetCore.Http.Features;
 
 namespace Ben.Http
 {
-    public abstract class HttpApplication : IHttpApplication<Context>
+    public delegate Task RequestHandler(Request req, Response res);
+
+    public class HttpApplication : IHttpApplication<Context>
     {
-        public abstract Task ProcessRequestAsync(Context context);
+        private readonly Dictionary<string, RequestHandler> _routes = new();
+
+        public void Get(string path, RequestHandler handler)
+        {
+            _routes[path] = handler;
+        }
+
+        public IEnumerable<string> Paths
+            => PathsEnumerable();
+
+        private IEnumerable<string> PathsEnumerable()
+        {
+            foreach (var path in _routes.Keys)
+            {
+                yield return path;
+            }
+        }
+
+        Task IHttpApplication<Context>.ProcessRequestAsync(Context context)
+        {
+            var request = context.Request;
+            var response = context.Response;
+            if (_routes.TryGetValue(request.Path, out var handler))
+            {
+                return handler(request, context.Response);
+            }
+
+            response.StatusCode = 404;
+            return Task.CompletedTask;
+        }
 
         Context IHttpApplication<Context>.CreateContext(IFeatureCollection features)
         {

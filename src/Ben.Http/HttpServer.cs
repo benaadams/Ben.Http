@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,6 +17,8 @@ namespace Ben.Http
 {
     public class HttpServer : IServer
     {
+        private Task? _startTask;
+        private TaskCompletionSource _completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         private ILoggerFactory _loggerFactory;
         private IServer _server;
 
@@ -51,10 +54,21 @@ namespace Ben.Http
                 _loggerFactory);
         }
 
-        public Task StartAsync<TContext>(IHttpApplication<TContext> application, CancellationToken cancellationToken) where TContext : notnull
-            => _server.StartAsync(application, cancellationToken);
+        public Task StartAsync<TContext>(IHttpApplication<TContext> application, CancellationToken cancellationToken = default) where TContext : notnull
+            => _startTask ??= _server.StartAsync(application, cancellationToken);
 
-        public Task StopAsync(CancellationToken cancellationToken) => _server.StopAsync(cancellationToken);
+        public async Task RunAsync(HttpApplication application, CancellationToken cancellationToken = default)
+        {
+            await StartAsync(application, cancellationToken);
+
+            cancellationToken.UnsafeRegister(static (o) => ((HttpServer)o!)._completion.TrySetResult(), this);
+            
+            await _completion.Task;
+
+            await _server.StopAsync(default);
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken = default) => _server.StopAsync(cancellationToken);
 
         public void Dispose() => _server.Dispose();
 
