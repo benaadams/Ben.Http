@@ -5,7 +5,7 @@
     <Title>Ben.Http</Title>
     <Description>Low level ASP.NET Core example web server</Description>
     <Nullable>enable</Nullable>
-    <Version>0.0.4</Version>
+    <Version>0.0.5</Version>
     <RepositoryUrl>https://github.com/benaadams/Ben.Http</RepositoryUrl>
     <PackageProjectUrl>https://github.com/benaadams/Ben.Http</PackageProjectUrl>
     <PackageLicenseUrl>https://github.com/benaadams/Ben.Http/blob/main/LICENSE</PackageLicenseUrl>

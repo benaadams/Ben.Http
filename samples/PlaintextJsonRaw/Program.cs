@@ -10,13 +10,13 @@ using Ben.Http;
 var port = 8080;
 
 var server = new HttpServer($"http://+:{port}");
-var app = new HttpApplication();
+var app = new HttpApp();
 
 // Assign routes
 app.Get("/plaintext", Plaintext);
 app.Get("/json", Json);
 
-Write($"{server} {app}"); // Output info
+Write($"{server} {app}"); // Display listening info
 
 await server.RunAsync(app);
 

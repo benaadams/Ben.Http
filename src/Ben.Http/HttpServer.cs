@@ -66,7 +66,7 @@ namespace Ben.Http
             return sb.ToString();
         }
 
-        public async Task RunAsync(HttpApplication application, CancellationToken cancellationToken = default)
+        public async Task RunAsync(HttpApp application, CancellationToken cancellationToken = default)
         {
             await _server.StartAsync(application, cancellationToken);
 

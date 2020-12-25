@@ -8,7 +8,7 @@ namespace Ben.Http
 {
     public static class HttpResponseExtensions
     {
-        public static Task TextResult(this Response response, ReadOnlySpan<byte> utf8String)
+        public static Task Text(this Response response, ReadOnlySpan<byte> utf8String)
         {
             var headers = response.Headers;
 
@@ -24,7 +24,7 @@ namespace Ben.Http
             return Task.CompletedTask;
         }
 
-        public static Task JsonResult<TValue>(this Response response, TValue value)
+        public static Task Json<TValue>(this Response response, TValue value)
         {
             response.Headers[HeaderNames.ContentType] = "application/json";
 
