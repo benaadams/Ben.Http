@@ -16,8 +16,9 @@ public class DatabaseGenerator : ISourceGenerator
 {
     public void Execute(GeneratorExecutionContext context)
     {
-        var receiver = context.SyntaxReceiver as DatabaseReceiver;
-        if (receiver is null || receiver.Invocations is null) return;
+        if (context.SyntaxReceiver is not DatabaseReceiver receiver || receiver.Invocations is null) return;
+
+        HashSet<(string dbType, string arg, string methodName)> invocations = new();
 
         StringBuilder sb = new StringBuilder();
         sb.AppendLine($@"// Source Generated at {DateTimeOffset.Now:R}
@@ -46,14 +47,29 @@ namespace Ben.Http
             {
                 if (member.IsKind(SyntaxKind.SimpleMemberAccessExpression))
                 {
+                    var semanticModel = context.Compilation.GetSemanticModel(invocation.SyntaxTree);
+                    ITypeSymbol? type = null;
                     foreach (SyntaxNode child in expression.ChildNodes())
                     {
-                        if (child is GenericNameSyntax methodIdent)
+                        if (child is IdentifierNameSyntax identifier)
+                        {
+                            type = semanticModel.GetTypeInfo(identifier).Type;
+                        }
+                        else if (child is GenericNameSyntax methodIdent)
                         {
                             var typeArgs = methodIdent.TypeArgumentList;
-                            if (typeArgs.Arguments.Count == 1)
+                            if (type is not null && typeArgs.Arguments.Count == 1)
                             {
-                                GenerateQueryMethod(context, typeArgs.Arguments[0], sb);
+                                var dbType = type.ToString();
+                                var arg = typeArgs.Arguments[0];
+                                var argStr = arg.ToString();
+                                var methodName = SanitizeIdentifier(arg.ToString());
+
+                                if (!invocations.Contains((dbType, argStr, methodName)))
+                                {
+                                    GenerateQueryMethod(semanticModel, dbType, methodName, arg, sb);
+                                    invocations.Add((dbType, argStr, methodName));
+                                }
                             }
                             break;
                         }
@@ -61,37 +77,44 @@ namespace Ben.Http
                 }
             }
         }
+
+        foreach (var db in invocations.GroupBy(type => type.dbType))
+        {
+            sb.AppendLine(@$"
+        public static Task<List<T>> QueryAsync<T>(this {db.Key} conn, string sql, bool autoClose = true)
+        {{");
+            foreach (var item in db)
+            {
+                sb.AppendLine(@$"
+            if (typeof(T) == typeof({item.arg}))
+            {{
+                return (Task<List<T>>)(object)QueryAsync_{item.methodName}(conn, sql);
+            }}");
+
+            }
+            sb.AppendLine(@$"
+            throw new NotImplementedException();
+        }}");
+        }
+
         sb.AppendLine(@"
     }
 }");
         context.AddSource("Database", sb.ToString());
     }
 
-    private void GenerateQueryMethod(GeneratorExecutionContext context, TypeSyntax arg, StringBuilder sb)
+    private void GenerateQueryMethod(SemanticModel semanticModel, string dbType, string methodName, TypeSyntax arg, StringBuilder sb)
     {
-        var methodName = SanitizeIdentifier(arg.ToString());
-
         sb.AppendLine(@$"
-        public static Task<List<{arg}>> QueryAsync<T>(this DbConnection conn, string sql)
-        {{
-            if (typeof(T) == typeof({arg}))
-            {{
-                return QueryAsync_{methodName}(conn, sql);
-            }}
-
-            throw new NotImplementedException();
-        }}
-
-        private static async Task<List<{arg}>> QueryAsync_{methodName}(DbConnection conn, string sql)
+        private static async Task<List<{arg}>> QueryAsync_{methodName}({dbType} conn, string sql, bool autoClose = true)
         {{
             using var cmd = conn.CreateCommand();
             cmd.CommandText = sql;
             var list = new List<{arg}>(16);
             await conn.OpenAsync();
 
-            var reader = await cmd.ExecuteReaderAsync();");
+            using var reader = await cmd.ExecuteReaderAsync();");
 
-        var semanticModel = context.Compilation.GetSemanticModel(arg.SyntaxTree);
         var type = semanticModel.GetTypeInfo(arg).Type;
 
         var count = 0;
@@ -124,9 +147,10 @@ namespace Ben.Http
                 ));
             }}
 
+            if (autoClose) conn.Close();
+
             return list;      
-        }}
-");
+        }}");
     }
 
     private string GetType(SpecialType specialType)

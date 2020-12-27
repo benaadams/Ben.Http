@@ -13,7 +13,7 @@ app.Get("/json", (req, res) => {
 });
 
 app.Get("/fortunes", async (req, res) => {
-    using SqlConnection conn = new (connection);
+    using SqlConnection conn = new(connection);
     var model = await conn.QueryAsync<(int id, string message)>("SELECT id, message FROM fortune");
     model.Add((0, "Additional fortune added at request time."));
     model.Sort((x, y) => string.CompareOrdinal(x.message, y.message));
