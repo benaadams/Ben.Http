@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -70,6 +71,7 @@ namespace Ben.Http
         {
             var request = context.Request;
             var response = context.Response;
+            response.Headers[HeaderNames.Server] = "Ben";
             if (_routes.TryGetValue(request.Path, out var handler))
             {
                 return handler(request, context.Response);

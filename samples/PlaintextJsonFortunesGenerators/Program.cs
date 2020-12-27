@@ -1,5 +1,6 @@
 using System;
 using Ben.Http;
+using static System.Console;
 using SqlConnection = Npgsql.NpgsqlConnection;
 
 var connection = Environment.GetEnvironmentVariable("connection");
@@ -19,6 +20,8 @@ app.Get("/fortunes", async (req, res) => {
     model.Sort((x, y) => string.CompareOrdinal(x.message, y.message));
     MustacheTemplates.RenderFortunes(model, res.Writer);
 });
+
+Write($"{server} {app}"); // Display listening info
 
 await server.RunAsync(app);
 

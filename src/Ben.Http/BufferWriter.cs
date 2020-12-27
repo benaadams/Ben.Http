@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Encodings.Web;
+using System.Text.Unicode;
 
 namespace Ben.Http.Templates
 {
@@ -145,6 +146,14 @@ namespace Ben.Http.Templates
     [SkipLocalsInit]
     public static class BufferExtensions
     {
+        private static HtmlEncoder HtmlEncoder { get; } = CreateHtmlEncoder();
+        private static HtmlEncoder CreateHtmlEncoder()
+        {
+            var settings = new TextEncoderSettings(UnicodeRanges.BasicLatin, UnicodeRanges.Katakana, UnicodeRanges.Hiragana);
+            settings.AllowCharacter('\u2014');  // allow EM DASH through
+            return HtmlEncoder.Create(settings);
+        }
+
         private const int StackAllocThresholdChars = 256;
         private const int MaxULongByteLength = 20;
 
@@ -181,7 +190,7 @@ namespace Ben.Http.Templates
             // Need largest size, can't do multiple rounds of encoding due to https://github.com/dotnet/runtime/issues/45994
             if ((long)input.Length * MaxPerHtmlChar <= StackAllocThresholdChars)
             {
-                var status = HtmlEncoder.Default.Encode(input, output, out int charsConsumed, out int charsWritten, isFinalBlock: true);
+                var status = HtmlEncoder.Encode(input, output, out int charsConsumed, out int charsWritten, isFinalBlock: true);
 
                 if (status != OperationStatus.Done)
                     throw new InvalidOperationException("Invalid Data");
@@ -193,7 +202,7 @@ namespace Ben.Http.Templates
                 array = ArrayPool<char>.Shared.Rent(input.Length * MaxPerHtmlChar);
                 output = array;
 
-                var status = HtmlEncoder.Default.Encode(input, output, out _, out int charsWritten, isFinalBlock: true);
+                var status = HtmlEncoder.Encode(input, output, out _, out int charsWritten, isFinalBlock: true);
 
                 if (status != OperationStatus.Done)
                     throw new InvalidOperationException("Invalid Data");
