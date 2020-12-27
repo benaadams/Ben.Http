@@ -10,6 +10,7 @@
     <RepositoryUrl>https://github.com/benaadams/Ben.Http</RepositoryUrl>
     <PackageProjectUrl>https://github.com/benaadams/Ben.Http</PackageProjectUrl>
     <License>MIT</License>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>

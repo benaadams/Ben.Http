@@ -1,16 +1,15 @@
 using System;
+using System.Collections.Generic;
 using Ben.Http;
 
-var port = 8080;
-
-var (server, app) = (new HttpServer($"http://+:{port}"), new HttpApp());
+var (server, app) = (new HttpServer($"http://+:8080"), new HttpApp());
 
 // Assign routes
 app.Get("/plaintext", () => "Hello, World!");
 
 app.Get("/json", (req, res) => {
     res.Headers.ContentLength = 27;
-    return res.Json(new Message { message = "Hello, World!" });
+    return res.Json(new Note { message = "Hello, World!" });
 });
 
 Console.Write($"{server} {app}"); // Display listening info
@@ -19,4 +18,4 @@ Console.Write($"{server} {app}"); // Display listening info
 await server.RunAsync(app);
 
 // Datastructures
-struct Message { public string message { get; set; } }
+struct Note { public string message { get; set; } }
