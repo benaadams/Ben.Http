@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Ben.Http;
 
 var (server, app) = (new HttpServer($"http://+:8080"), new HttpApp());
