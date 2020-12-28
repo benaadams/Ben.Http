@@ -24,7 +24,7 @@ app.Get("/fortunes", async (req, res) => {
 app.Get("/db", async (req, res) => {
     using SqlConnection conn = new(connection);
     await res.Json(await conn.QueryRowAsync<World, int>(
-        "SELECT TOP 1 id, randomnumber FROM world WHERE id = @id", 
+        "SELECT id, randomnumber FROM world WHERE id = @id", 
         (name: "@id", value: ConcurrentRandom.Next(10000) + 1)));
 });
 
