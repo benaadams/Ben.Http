@@ -21,6 +21,13 @@ app.Get("/fortunes", async (req, res) => {
     MustacheTemplates.RenderFortunes(model, res.Writer);
 });
 
+app.Get("/db", async (req, res) => {
+    using SqlConnection conn = new(connection);
+    await res.Json(await conn.QuerySingleParamAsync<(int id, string message), int>(
+        "SELECT id, randomnumber FROM world WHERE id = @id", 
+        (name: "@id", value: ConcurrentRandom.Next(10000) + 1)));
+});
+
 Write($"{server} {app}"); // Display listening info
 
 await server.RunAsync(app);

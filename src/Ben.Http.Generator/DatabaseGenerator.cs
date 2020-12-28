@@ -16,9 +16,9 @@ public class DatabaseGenerator : ISourceGenerator
 {
     public void Execute(GeneratorExecutionContext context)
     {
-        if (context.SyntaxReceiver is not DatabaseReceiver receiver || receiver.Invocations is null) return;
+        if (context.SyntaxReceiver is not DatabaseReceiver receiver ||
+            (receiver.QueryAsyncInvocations is null && receiver.QuerySingleParamAsyncInvocations is null)) return;
 
-        HashSet<(string dbType, string arg, string methodName)> invocations = new();
 
         StringBuilder sb = new StringBuilder();
         sb.AppendLine($@"// Source Generated at {DateTimeOffset.Now:R}
@@ -26,13 +26,162 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace Ben.Http
 {{
     public static class DatabaseExtensionsGenerated
     {{");
-        foreach (var invocation in receiver.Invocations)
+
+        if (receiver.QueryAsyncInvocations is not null)
+        {
+            OutputQueryAsync(context.Compilation, receiver.QueryAsyncInvocations, sb);
+        }
+        if (receiver.QuerySingleParamAsyncInvocations is not null)
+        {
+            OutputQuerySingleParamAsync(context.Compilation, receiver.QuerySingleParamAsyncInvocations, sb);
+        }
+
+        sb.AppendLine(@"
+    }
+}");
+        context.AddSource("Database", sb.ToString());
+    }
+
+    private void OutputQuerySingleParamAsync(Compilation compilation, List<InvocationExpressionSyntax> queryAsyncInvocations, StringBuilder sb)
+    {
+        HashSet<(string dbType, string arg0, string arg1, string methodName)> invocations = new();
+        foreach (var invocation in queryAsyncInvocations)
+        {
+            var arguments = invocation.ArgumentList.Arguments;
+            if (arguments.Count != 2) continue;
+            var argument = arguments[0].Expression;
+            if (argument.Kind() != SyntaxKind.StringLiteralExpression)
+            {
+                continue;
+            }
+            argument = arguments[1].Expression;
+
+            var expression = invocation.Expression;
+            if (expression is MemberAccessExpressionSyntax member)
+            {
+                if (member.IsKind(SyntaxKind.SimpleMemberAccessExpression))
+                {
+                    var semanticModel = compilation.GetSemanticModel(invocation.SyntaxTree);
+                    ITypeSymbol? type = null;
+                    foreach (SyntaxNode child in expression.ChildNodes())
+                    {
+                        if (child is IdentifierNameSyntax identifier)
+                        {
+                            type = semanticModel.GetTypeInfo(identifier).Type;
+                        }
+                        else if (child is GenericNameSyntax methodIdent)
+                        {
+                            var typeArgs = methodIdent.TypeArgumentList;
+                            if (type is not null && typeArgs.Arguments.Count == 2)
+                            {
+                                var dbType = type.ToString();
+                                var arg0 = typeArgs.Arguments[0];
+                                var arg1 = typeArgs.Arguments[1];
+                                var argStr0 = arg0.ToString();
+                                var argStr1 = arg1.ToString();
+                                var methodName = SanitizeIdentifier(argStr0 + argStr1);
+
+                                if (!invocations.Contains((dbType, argStr0, argStr1, methodName)))
+                                {
+                                    GenerateQuerySingleParamMethod(semanticModel, dbType, methodName, arg0, arg1, sb);
+                                    invocations.Add((dbType, argStr0, argStr1, methodName));
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        foreach (var db in invocations.GroupBy(type => type.dbType))
+        {
+            sb.AppendLine(@$"
+        public static Task<TResult> QuerySingleParamAsync<TResult, TValue>(this {db.Key} conn, string sql, (string name, TValue value) parameter, bool autoClose = true)
+            where TResult : struct, ITuple
+        {{");
+            foreach (var item in db)
+            {
+                sb.AppendLine(@$"
+            if (typeof(TResult) == typeof({item.arg0}) && typeof(TValue) == typeof({item.arg1}))
+            {{
+                return (Task<TResult>)(object)QuerySingleParamAsync_{item.methodName}(conn, sql, (parameter.name, ({item.arg1})(object)parameter.value!), autoClose);
+            }}");
+
+            }
+            sb.AppendLine(@$"
+            throw new NotImplementedException();
+        }}");
+        }
+    }
+
+    private void GenerateQuerySingleParamMethod(SemanticModel semanticModel, string dbType, string methodName, TypeSyntax argResult, TypeSyntax argParam, StringBuilder sb)
+    {
+        var dbPrefix = dbType.Replace("Connection", "");
+        sb.AppendLine(@$"
+        private static async Task<{argResult}> QuerySingleParamAsync_{methodName}({dbType} conn, string sql, (string name, {argParam} value) param, bool autoClose)
+        {{
+            using var cmd = new {dbPrefix}Command(sql, conn);
+            var parameter = new {dbPrefix}Parameter<{argParam}>(parameterName: param.name, value: param.value);
+            cmd.Parameters.Add(parameter);
+            await conn.OpenAsync();
+
+            using var reader = await cmd.ExecuteReaderAsync();
+            await reader.ReadAsync();");
+
+        var type = semanticModel.GetTypeInfo(argResult).Type;
+
+        var fields = type.GetMembers().OfType<IFieldSymbol>().Where(f => !f.IsImplicitlyDeclared).ToArray();
+
+        sb.Append(@$"
+            if (!autoClose)
+            {{
+                return (");
+        foreach (var field in fields)
+        {
+            sb.Append(@$"
+                    {field.Name}: reader.Get{GetType(field.Type.SpecialType)}(""{field.Name}""),");
+        }
+
+        sb.Remove(sb.Length - 1, 1);
+
+        sb.Append(@$"
+                );
+            }}
+            else
+            {{
+                var retVal = (");
+        foreach (var field in fields)
+        {
+            sb.Append(@$"
+                    {field.Name}: reader.Get{GetType(field.Type.SpecialType)}(""{field.Name}""),");
+        }
+
+        sb.Remove(sb.Length - 1, 1);
+
+        sb.AppendLine(@$"
+                );
+            
+                conn.Close();
+
+                return retVal;
+            }}
+    
+        }}");
+    }
+
+
+    private void OutputQueryAsync(Compilation compilation, List<InvocationExpressionSyntax> queryAsyncInvocations, StringBuilder sb)
+    {
+        HashSet<(string dbType, string arg, string methodName)> invocations = new();
+        foreach (var invocation in queryAsyncInvocations)
         {
             var arguments = invocation.ArgumentList.Arguments;
             if (arguments.Count != 1) continue;
@@ -47,7 +196,7 @@ namespace Ben.Http
             {
                 if (member.IsKind(SyntaxKind.SimpleMemberAccessExpression))
                 {
-                    var semanticModel = context.Compilation.GetSemanticModel(invocation.SyntaxTree);
+                    var semanticModel = compilation.GetSemanticModel(invocation.SyntaxTree);
                     ITypeSymbol? type = null;
                     foreach (SyntaxNode child in expression.ChildNodes())
                     {
@@ -63,7 +212,7 @@ namespace Ben.Http
                                 var dbType = type.ToString();
                                 var arg = typeArgs.Arguments[0];
                                 var argStr = arg.ToString();
-                                var methodName = SanitizeIdentifier(arg.ToString());
+                                var methodName = SanitizeIdentifier(argStr);
 
                                 if (!invocations.Contains((dbType, argStr, methodName)))
                                 {
@@ -81,14 +230,15 @@ namespace Ben.Http
         foreach (var db in invocations.GroupBy(type => type.dbType))
         {
             sb.AppendLine(@$"
-        public static Task<List<T>> QueryAsync<T>(this {db.Key} conn, string sql, bool autoClose = true)
+        public static Task<List<TResult>> QueryAsync<TResult>(this {db.Key} conn, string sql, bool autoClose = true)
+            where TResult : struct, ITuple
         {{");
             foreach (var item in db)
             {
                 sb.AppendLine(@$"
-            if (typeof(T) == typeof({item.arg}))
+            if (typeof(TResult) == typeof({item.arg}))
             {{
-                return (Task<List<T>>)(object)QueryAsync_{item.methodName}(conn, sql);
+                return (Task<List<TResult>>)(object)QueryAsync_{item.methodName}(conn, sql, autoClose);
             }}");
 
             }
@@ -96,17 +246,12 @@ namespace Ben.Http
             throw new NotImplementedException();
         }}");
         }
-
-        sb.AppendLine(@"
-    }
-}");
-        context.AddSource("Database", sb.ToString());
     }
 
     private void GenerateQueryMethod(SemanticModel semanticModel, string dbType, string methodName, TypeSyntax arg, StringBuilder sb)
     {
         sb.AppendLine(@$"
-        private static async Task<List<{arg}>> QueryAsync_{methodName}({dbType} conn, string sql, bool autoClose = true)
+        private static async Task<List<{arg}>> QueryAsync_{methodName}({dbType} conn, string sql, bool autoClose)
         {{
             using var cmd = conn.CreateCommand();
             cmd.CommandText = sql;
@@ -191,7 +336,8 @@ namespace Ben.Http
 
     class DatabaseReceiver : ISyntaxReceiver
     {
-        public List<InvocationExpressionSyntax>? Invocations { get; private set; }
+        public List<InvocationExpressionSyntax>? QueryAsyncInvocations { get; private set; }
+        public List<InvocationExpressionSyntax>? QuerySingleParamAsyncInvocations { get; private set; }
 
         public void OnVisitSyntaxNode(SyntaxNode node)
         {
@@ -208,9 +354,14 @@ namespace Ben.Http
                             if (child is GenericNameSyntax methodIdent)
                             {
                                 var valueText = methodIdent.Identifier.ValueText;
-                                if (valueText == "QueryAsync")
+                                switch (valueText)
                                 {
-                                    (Invocations ??= new()).Add(invocation);
+                                    case "QueryAsync":
+                                        (QueryAsyncInvocations ??= new()).Add(invocation);
+                                        break;
+                                    case "QuerySingleParamAsync":
+                                        (QuerySingleParamAsyncInvocations ??= new()).Add(invocation);
+                                        break;
                                 }
                                 break;
                             }
