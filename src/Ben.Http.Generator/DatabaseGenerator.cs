@@ -138,6 +138,7 @@ namespace Ben.Http
         var type = semanticModel.GetTypeInfo(argResult).Type;
 
         var fields = type.GetMembers().OfType<IFieldSymbol>().Where(f => !f.IsImplicitlyDeclared).ToArray();
+        var properties = type.GetMembers().OfType<IPropertySymbol>().Where(f => !f.IsReadOnly).ToArray();
 
         sb.Append(@$"
             if (!autoClose)
@@ -148,6 +149,11 @@ namespace Ben.Http
         {
             sb.Append(@$"
                     {field.Name} = reader.Get{GetType(field.Type.SpecialType)}(""{field.Name}""),");
+        }
+        foreach (var property in properties)
+        {
+            sb.Append(@$"
+                    {property.Name} = reader.Get{GetType(property.Type.SpecialType)}(""{property.Name}""),");
         }
 
         sb.Remove(sb.Length - 1, 1);
@@ -163,6 +169,11 @@ namespace Ben.Http
         {
             sb.Append(@$"
                     {field.Name} = reader.Get{GetType(field.Type.SpecialType)}(""{field.Name}""),");
+        }
+        foreach (var property in properties)
+        {
+            sb.Append(@$"
+                    {property.Name} = reader.Get{GetType(property.Type.SpecialType)}(""{property.Name}""),");
         }
 
         sb.Remove(sb.Length - 1, 1);
@@ -264,11 +275,19 @@ namespace Ben.Http
 
         var count = 0;
         var fields = type.GetMembers().OfType<IFieldSymbol>().Where(f => !f.IsImplicitlyDeclared).ToArray();
+        var properties = type.GetMembers().OfType<IPropertySymbol>().Where(f => !f.IsReadOnly).ToArray();
 
         foreach (var field in fields)
         {
             sb.Append(@$"
             var f{count} = reader.GetOrdinal(""{field.Name}"");");
+
+            count++;
+        }
+        foreach (var propery in properties)
+        {
+            sb.Append(@$"
+            var f{count} = reader.GetOrdinal(""{propery.Name}"");");
 
             count++;
         }
@@ -283,6 +302,13 @@ namespace Ben.Http
         {
             sb.Append(@$"
                     {field.Name} = reader.Get{GetType(field.Type.SpecialType)}(f{count}),");
+
+            count++;
+        }
+        foreach (var property in properties)
+        {
+            sb.Append(@$"
+                    {property.Name} = reader.Get{GetType(property.Type.SpecialType)}(f{count}),");
 
             count++;
         }

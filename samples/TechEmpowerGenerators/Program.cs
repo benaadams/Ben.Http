@@ -33,4 +33,4 @@ Write($"{server} {app}"); // Display listening info
 await server.RunAsync(app);
 
 struct Note { public string message { get; set; } }
-struct World { public int id; public int randomnumber; }
+struct World { public int id { get; set; } public int randomnumber { get; set; } }
