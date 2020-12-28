@@ -1,7 +1,6 @@
 using System;
 using Ben.Http;
-using static System.Console;
-using SqlConnection = Npgsql.NpgsqlConnection;
+using Sql = Npgsql.NpgsqlConnection;
 
 var connection = Environment.GetEnvironmentVariable("connection");
 var (server, app) = (new HttpServer("http://+:8080"), new HttpApp());
@@ -14,21 +13,19 @@ app.Get("/json", (req, res) => {
 });
 
 app.Get("/fortunes", async (req, res) => {
-    using SqlConnection conn = new(connection);
-    var model = await conn.QueryAsync<(int id, string message)>("SELECT id, message FROM fortune");
+    using Sql db = new(connection);
+    var model = await db.QueryAsync<(int id, string message)>("SELECT id, message FROM fortune");
     model.Add((0, "Additional fortune added at request time."));
     model.Sort((x, y) => string.CompareOrdinal(x.message, y.message));
     MustacheTemplates.RenderFortunes(model, res.Writer);
 });
 
 app.Get("/db", async (req, res) => {
-    using SqlConnection conn = new(connection);
-    await res.Json(await conn.QueryRowAsync<World, int>(
+    using Sql db = new(connection);
+    await res.Json(await db.QueryRowAsync<World, int>(
         "SELECT id, randomnumber FROM world WHERE id = @id", 
         (name: "@id", value: ConcurrentRandom.Next(10000) + 1)));
 });
-
-Write($"{server} {app}"); // Display listening info
 
 await server.RunAsync(app);
 
