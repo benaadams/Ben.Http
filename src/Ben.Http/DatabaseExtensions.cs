@@ -13,7 +13,7 @@ namespace Ben.Http
             throw new NotImplementedException("You need to add the Ben.Http.Generator to use this method.");
         }
 
-        public static Task<TResult> QuerySingleParamAsync<TResult, TValue>(this IDbConnection conn, string sql, (string name, TValue value) parameter, bool autoClose = true)
+        public static Task<TResult> QueryRowAsync<TResult, TValue>(this IDbConnection conn, string sql, (string name, TValue value) parameter, bool autoClose = true)
         {
             throw new NotImplementedException("You need to add the Ben.Http.Generator to use this method.");
         }

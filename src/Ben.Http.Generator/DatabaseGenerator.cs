@@ -16,8 +16,9 @@ public class DatabaseGenerator : ISourceGenerator
 {
     public void Execute(GeneratorExecutionContext context)
     {
-        if (context.SyntaxReceiver is not DatabaseReceiver receiver ||
-            (receiver.QueryAsyncInvocations is null && receiver.QuerySingleParamAsyncInvocations is null)) return;
+        if (context.SyntaxReceiver is not DatabaseReceiver receiver || 
+            (receiver.QueryAsyncInvocations is null && 
+             receiver.QueryRowAsyncInvocations is null)) return;
 
 
         StringBuilder sb = new StringBuilder();
@@ -38,9 +39,9 @@ namespace Ben.Http
         {
             OutputQueryAsync(context.Compilation, receiver.QueryAsyncInvocations, sb);
         }
-        if (receiver.QuerySingleParamAsyncInvocations is not null)
+        if (receiver.QueryRowAsyncInvocations is not null)
         {
-            OutputQuerySingleParamAsync(context.Compilation, receiver.QuerySingleParamAsyncInvocations, sb);
+            OutputQueryRowAsync(context.Compilation, receiver.QueryRowAsyncInvocations, sb);
         }
 
         sb.AppendLine(@"
@@ -49,7 +50,7 @@ namespace Ben.Http
         context.AddSource("Database", sb.ToString());
     }
 
-    private void OutputQuerySingleParamAsync(Compilation compilation, List<InvocationExpressionSyntax> queryAsyncInvocations, StringBuilder sb)
+    private void OutputQueryRowAsync(Compilation compilation, List<InvocationExpressionSyntax> queryAsyncInvocations, StringBuilder sb)
     {
         HashSet<(string dbType, string arg0, string arg1, string methodName)> invocations = new();
         foreach (var invocation in queryAsyncInvocations)
@@ -90,7 +91,7 @@ namespace Ben.Http
 
                                 if (!invocations.Contains((dbType, argStr0, argStr1, methodName)))
                                 {
-                                    GenerateQuerySingleParamMethod(semanticModel, dbType, methodName, arg0, arg1, sb);
+                                    GenerateQueryRowMethod(semanticModel, dbType, methodName, arg0, arg1, sb);
                                     invocations.Add((dbType, argStr0, argStr1, methodName));
                                 }
                             }
@@ -104,14 +105,14 @@ namespace Ben.Http
         foreach (var db in invocations.GroupBy(type => type.dbType))
         {
             sb.AppendLine(@$"
-        public static Task<TResult> QuerySingleParamAsync<TResult, TValue>(this {db.Key} conn, string sql, (string name, TValue value) parameter, bool autoClose = true)
+        public static Task<TResult> QueryRowAsync<TResult, TValue>(this {db.Key} conn, string sql, (string name, TValue value) parameter, bool autoClose = true)
         {{");
             foreach (var item in db)
             {
                 sb.AppendLine(@$"
             if (typeof(TResult) == typeof({item.arg0}) && typeof(TValue) == typeof({item.arg1}))
             {{
-                return (Task<TResult>)(object)QuerySingleParamAsync_{item.methodName}(conn, sql, (parameter.name, ({item.arg1})(object)parameter.value!), autoClose);
+                return (Task<TResult>)(object)QueryRowAsync_{item.methodName}(conn, sql, (parameter.name, ({item.arg1})(object)parameter.value!), autoClose);
             }}");
 
             }
@@ -121,11 +122,11 @@ namespace Ben.Http
         }
     }
 
-    private void GenerateQuerySingleParamMethod(SemanticModel semanticModel, string dbType, string methodName, TypeSyntax argResult, TypeSyntax argParam, StringBuilder sb)
+    private void GenerateQueryRowMethod(SemanticModel semanticModel, string dbType, string methodName, TypeSyntax argResult, TypeSyntax argParam, StringBuilder sb)
     {
         var dbPrefix = dbType.Replace("Connection", "");
         sb.AppendLine(@$"
-        private static async Task<{argResult}> QuerySingleParamAsync_{methodName}({dbType} conn, string sql, (string name, {argParam} value) param, bool autoClose)
+        private static async Task<{argResult}> QueryRowAsync_{methodName}({dbType} conn, string sql, (string name, {argParam} value) param, bool autoClose)
         {{
             using var cmd = new {dbPrefix}Command(sql, conn);
             var parameter = new {dbPrefix}Parameter<{argParam}>(parameterName: param.name, value: param.value);
@@ -364,7 +365,7 @@ namespace Ben.Http
     class DatabaseReceiver : ISyntaxReceiver
     {
         public List<InvocationExpressionSyntax>? QueryAsyncInvocations { get; private set; }
-        public List<InvocationExpressionSyntax>? QuerySingleParamAsyncInvocations { get; private set; }
+        public List<InvocationExpressionSyntax>? QueryRowAsyncInvocations { get; private set; }
 
         public void OnVisitSyntaxNode(SyntaxNode node)
         {
@@ -386,8 +387,8 @@ namespace Ben.Http
                                     case "QueryAsync":
                                         (QueryAsyncInvocations ??= new()).Add(invocation);
                                         break;
-                                    case "QuerySingleParamAsync":
-                                        (QuerySingleParamAsyncInvocations ??= new()).Add(invocation);
+                                    case "QueryRowAsync":
+                                        (QueryRowAsyncInvocations ??= new()).Add(invocation);
                                         break;
                                 }
                                 break;
