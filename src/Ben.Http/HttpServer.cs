@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -98,7 +99,14 @@ namespace Ben.Http
 
         private class SocketOptions : IOptions<SocketTransportOptions>
         {
-            public static SocketOptions Defaults { get; } = new SocketOptions { Value = new SocketTransportOptions() };
+            public static SocketOptions Defaults { get; } = new SocketOptions 
+            {
+                Value = new SocketTransportOptions()
+                {
+                    WaitForDataBeforeAllocatingBuffer = false,
+                    UnsafePreferInlineScheduling = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS") == "1" : false,
+                } 
+            };
 
             public SocketTransportOptions Value { get; init; } = new SocketTransportOptions();
         }
