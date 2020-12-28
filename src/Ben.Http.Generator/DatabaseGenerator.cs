@@ -105,7 +105,6 @@ namespace Ben.Http
         {
             sb.AppendLine(@$"
         public static Task<TResult> QuerySingleParamAsync<TResult, TValue>(this {db.Key} conn, string sql, (string name, TValue value) parameter, bool autoClose = true)
-            where TResult : struct, ITuple
         {{");
             foreach (var item in db)
             {
@@ -143,31 +142,33 @@ namespace Ben.Http
         sb.Append(@$"
             if (!autoClose)
             {{
-                return (");
+                return new ()
+                {{");
         foreach (var field in fields)
         {
             sb.Append(@$"
-                    {field.Name}: reader.Get{GetType(field.Type.SpecialType)}(""{field.Name}""),");
+                    {field.Name} = reader.Get{GetType(field.Type.SpecialType)}(""{field.Name}""),");
         }
 
         sb.Remove(sb.Length - 1, 1);
 
         sb.Append(@$"
-                );
+                }};
             }}
             else
             {{
-                var retVal = (");
+                var retVal = new {argResult}()
+                {{");
         foreach (var field in fields)
         {
             sb.Append(@$"
-                    {field.Name}: reader.Get{GetType(field.Type.SpecialType)}(""{field.Name}""),");
+                    {field.Name} = reader.Get{GetType(field.Type.SpecialType)}(""{field.Name}""),");
         }
 
         sb.Remove(sb.Length - 1, 1);
 
         sb.AppendLine(@$"
-                );
+                }};
             
                 conn.Close();
 
@@ -231,7 +232,6 @@ namespace Ben.Http
         {
             sb.AppendLine(@$"
         public static Task<List<TResult>> QueryAsync<TResult>(this {db.Key} conn, string sql, bool autoClose = true)
-            where TResult : struct, ITuple
         {{");
             foreach (var item in db)
             {
@@ -277,11 +277,12 @@ namespace Ben.Http
         sb.Append(@$"
             while (await reader.ReadAsync())
             {{
-                list.Add((");
+                list.Add(new ()
+                {{");
         foreach (var field in fields)
         {
             sb.Append(@$"
-                    reader.Get{GetType(field.Type.SpecialType)}(f{count}),");
+                    {field.Name} = reader.Get{GetType(field.Type.SpecialType)}(f{count}),");
 
             count++;
         }
@@ -289,7 +290,7 @@ namespace Ben.Http
         sb.Remove(sb.Length - 1, 1);
 
         sb.AppendLine(@$"
-                ));
+                }});
             }}
 
             if (autoClose) conn.Close();

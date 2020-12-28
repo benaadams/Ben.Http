@@ -23,7 +23,7 @@ app.Get("/fortunes", async (req, res) => {
 
 app.Get("/db", async (req, res) => {
     using SqlConnection conn = new(connection);
-    await res.Json(await conn.QuerySingleParamAsync<(int id, string message), int>(
+    await res.Json(await conn.QuerySingleParamAsync<World, int>(
         "SELECT id, randomnumber FROM world WHERE id = @id", 
         (name: "@id", value: ConcurrentRandom.Next(10000) + 1)));
 });
@@ -33,3 +33,4 @@ Write($"{server} {app}"); // Display listening info
 await server.RunAsync(app);
 
 struct Note { public string message { get; set; } }
+struct World { public int id; public int randomnumber; }

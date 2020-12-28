@@ -6,7 +6,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
-    <Version>0.0.9</Version>
+    <Version>0.0.10</Version>
     <RepositoryUrl>https://github.com/benaadams/Ben.Http</RepositoryUrl>
     <PackageProjectUrl>https://github.com/benaadams/Ben.Http</PackageProjectUrl>
     <License>MIT</License>
