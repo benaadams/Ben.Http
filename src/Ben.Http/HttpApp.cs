@@ -66,18 +66,18 @@ namespace Ben.Http
             }
         }
 
-        Task IHttpApplication<Context>.ProcessRequestAsync(Context context)
+        async Task IHttpApplication<Context>.ProcessRequestAsync(Context context)
         {
             var request = context.Request;
             var response = context.Response;
             response.Headers[HeaderNames.Server] = "Ben";
             if (_routes.TryGetValue(request.Path, out var handler))
             {
-                return handler(request, context.Response);
+                await handler(request, context.Response);
+                await context.Response.Writer.FlushAsync();
             }
 
             response.StatusCode = 404;
-            return Task.CompletedTask;
         }
 
         Context IHttpApplication<Context>.CreateContext(IFeatureCollection features)
